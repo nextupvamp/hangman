@@ -1,11 +1,11 @@
 package ru.nextupvamp;
 
-import ru.nextupvamp.game.GameSession;
+import ru.nextupvamp.game.Game;
 
 public class Main {
     public static void main(String[] args) {
         try {
-            GameSession.getInstance().init();
+            Game.getInstance().init();
         } catch (Exception e) {
             e.printStackTrace();
         }

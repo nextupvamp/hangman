@@ -1,5 +1,6 @@
 package ru.nextupvamp.game;
 
+import org.apache.maven.surefire.shared.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -10,10 +11,8 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.nextupvamp.io.Display;
 import ru.nextupvamp.io.InputHandler;
-import ru.nextupvamp.util.Pair;
 import ru.nextupvamp.words.WordFinder;
-
-import java.io.IOException;
+import ru.nextupvamp.words.difficulties.LowDifficulty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,69 +30,69 @@ public class GameTest {
 
     @InjectMocks
     @Spy
-    private Game game;
+    private GameSession gameSession;
 
     private final String TEST_WORD = "TEST";
     private final String TEST_HINT = "This is a test";
 
     @BeforeEach
-    public void setUp(TestInfo testInfo) throws IOException {
+    public void setUp(TestInfo testInfo) {
         if (testInfo.getDisplayName().equals("startGameWithEmptyWord")) {
             return;
         }
-        when(wordFinder.findWord(anyString(), anyInt())).thenReturn(new Pair<>(TEST_WORD, TEST_HINT));
+        when(wordFinder.findWord(anyString(), any())).thenReturn(Pair.of(TEST_WORD, TEST_HINT));
         when(inputHandler.inputCategory(anyList())).thenReturn("General");
-        when(inputHandler.inputDifficulty()).thenReturn(1);
+        when(inputHandler.inputDifficulty()).thenReturn(new LowDifficulty());
     }
 
     @Test
-    public void startGameWithEmptyWord() throws IOException {
-        when(wordFinder.findWord(anyString(), anyInt())).thenReturn(new Pair<>("", TEST_HINT));
+    public void startGameWithEmptyWord() {
+        when(wordFinder.findWord(anyString(), any())).thenReturn(Pair.of("", TEST_HINT));
         when(inputHandler.inputCategory(anyList())).thenReturn("General");
-        when(inputHandler.inputDifficulty()).thenReturn(1);
+        when(inputHandler.inputDifficulty()).thenReturn(new LowDifficulty());
 
-        assertThrows(IOException.class, () -> game.startGame());
+        assertThrows(RuntimeException.class, () -> gameSession.startGame());
     }
 
     @Test
-    public void winGame() throws IOException {
+    public void winGame() {
         when(inputHandler.inputLetter(anySet())).thenReturn('T', 'E', 'S');
         when(inputHandler.inputContinue()).thenReturn(false);
 
-        game.startGame();
+        gameSession.startGame();
 
         verify(display).displayGameResult(true, TEST_WORD);
     }
 
     @Test
-    public void loseGame() throws IOException {
+    public void loseGame() {
         when(inputHandler.inputLetter(anySet())).thenReturn('A', 'B', 'C', 'D', 'E', 'F');
         when(inputHandler.inputContinue()).thenReturn(false);
 
-        game.startGame();
+        gameSession.startGame();
 
         verify(display).displayGameResult(false, TEST_WORD);
     }
 
     @Test
-    public void guessRightLetter() throws IOException {
+    public void guessRightLetter() {
         when(inputHandler.inputLetter(anySet())).thenReturn('T');
         when(inputHandler.inputContinue()).thenReturn(false);
-        doReturn(true).when(game).checkIfWin();
+        doReturn(true).when(gameSession).isWordGuessed();
 
-        game.startGame();
+        gameSession.startGame();
 
-        assertEquals(Game.ATTEMPTS, game.getLives());
+        assertEquals(Game.ATTEMPTS, gameSession.getPlayer().getLives());
     }
 
     @Test
-    public void guessWrongLetter() throws IOException {
+    public void guessWrongLetter() {
         when(inputHandler.inputLetter(anySet())).thenReturn('A', 'T');
         when(inputHandler.inputContinue()).thenReturn(false);
-        doReturn(true).when(game).checkIfWin();
+        doReturn(true).when(gameSession).isWordGuessed();
 
-        game.startGame();
+        gameSession.startGame();
 
-        assertEquals(Game.ATTEMPTS - 1, game.getLives());
+        assertEquals(Game.ATTEMPTS - 1, gameSession.getPlayer().getLives());
     }
 }

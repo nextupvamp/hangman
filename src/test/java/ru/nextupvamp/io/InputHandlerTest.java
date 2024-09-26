@@ -4,16 +4,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import ru.nextupvamp.words.WordFinderTest;
+import ru.nextupvamp.words.difficulties.Difficulty;
+import ru.nextupvamp.words.difficulties.MediumDifficulty;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class InputHandlerTest {
     // using the same word map as in the WordFinderTest class
@@ -22,7 +22,7 @@ public class InputHandlerTest {
     private final ByteArrayOutputStream BAOS = new ByteArrayOutputStream();
     private final PrintStream PRINT_STREAM = new PrintStream(BAOS);
 
-    public InputHandlerTest() throws IOException, NoSuchFieldException, IllegalAccessException {
+    public InputHandlerTest() {
     }
 
     @Test
@@ -51,8 +51,8 @@ public class InputHandlerTest {
         // so there's a lot of such boilerplate code :(
         ByteArrayInputStream in = new ByteArrayInputStream("2".getBytes());
         InputHandler inputHandler = new InputHandler(in, PRINT_STREAM);
-        int difficulty = inputHandler.inputDifficulty();
-        assertEquals(2, difficulty);
+        Difficulty difficulty = inputHandler.inputDifficulty();
+        assertSame(MediumDifficulty.class, difficulty.getClass());
     }
 
     @ParameterizedTest

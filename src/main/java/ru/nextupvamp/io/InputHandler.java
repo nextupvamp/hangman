@@ -1,5 +1,9 @@
 package ru.nextupvamp.io;
 
+import ru.nextupvamp.words.difficulties.Difficulty;
+import ru.nextupvamp.words.difficulties.HighDifficulty;
+import ru.nextupvamp.words.difficulties.LowDifficulty;
+import ru.nextupvamp.words.difficulties.MediumDifficulty;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +14,18 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class InputHandler {
+    public static final char PLAYER_NEED_HINT_SIGN = '?';
+
+    private static final char DEFAULT_INITIALIZING_CHAR_VALUE = '\u0000';
+    private static final String PLAYER_NEED_HINT_STRING = "?";
+    private static final String PLAYER_AGREEMENT = "y";
+    private static final String PLAYER_DISAGREEMENT = "n";
+    private static final String INPUT_CORRECT_VALUE_REQUEST = "Введите корректное значение";
+    private static final char FIRST_RUSSIAN_LETTER = 'А';
+    private static final char LAST_RUSSIAN_LETTER = 'Я';
+    private static final char PROBLEMATIC_RUSSIAN_LETTER = 'Ё';
+    private static final char PROBLEMATIC_RUSSIAN_LETTER_SOLUTION = 'Е';
+
     private final Scanner scanner;
     private final PrintStream printStream;
     private final Random random = new SecureRandom();
@@ -26,62 +42,56 @@ public class InputHandler {
 
     @SuppressWarnings("checkstyle:MultipleStringLiterals")
     public String inputCategory(List<String> categories) {
-        int category = 0;
-
         printStream.print("Введите номер категории: ");
-        while (category <= 0 || category > categories.size()) {
-            String input = scanner.nextLine();
-            if (input == null || input.isEmpty()) {
-                category = random.nextInt(1, categories.size() + 1);
-                break;
-            }
-            try {
-                category = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                printStream.println("Введите число");
-                continue;
-            }
-            if (category <= 0 || category > categories.size()) {
-                printStream.println("Введите корректное значение");
-            }
-        }
+        int category = inputNumber(1, categories.size());
 
         return categories.get(category - 1);
     }
 
     @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:MultipleStringLiterals"})
-    public int inputDifficulty() {
-        int difficulty = 0;
+    public Difficulty inputDifficulty() {
         printStream.print("Введите уровень сложности: ");
-        while (difficulty <= 0 || difficulty > 3) {
+        int difficulty = inputNumber(1, Difficulty.DIFFICULTIES);
+
+        return switch (difficulty) {
+            case 1 -> new LowDifficulty();
+            case 2 -> new MediumDifficulty();
+            case 3 -> new HighDifficulty();
+            default -> throw new IllegalStateException("Unexpected value: " + difficulty);
+        };
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private int inputNumber(int from, int to) {
+        while (true) {
             String input = scanner.nextLine();
             if (input == null || input.isEmpty()) {
-                difficulty = random.nextInt(1, 4);
-                break;
-            }
-            try {
-                difficulty = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                printStream.println("Введите число");
-                continue;
-            }
-            if (difficulty <= 0 || difficulty > 3) {
-                printStream.println("Введите корректное значение");
+                return random.nextInt(from, to + 1);
+            } else {
+                Scanner intScanner = new Scanner(input);
+                if (intScanner.hasNextInt()) {
+                    int readInt = intScanner.nextInt();
+                    if (readInt < from || readInt > to) {
+                        printStream.println(INPUT_CORRECT_VALUE_REQUEST);
+                    } else {
+                        return readInt;
+                    }
+                } else {
+                    printStream.println("Введите число");
+                }
             }
         }
-
-        return difficulty;
     }
 
     public char inputLetter(Set<Character> enteredLetters) {
         String input;
-        char letter = '\u0000';
+        char letter = DEFAULT_INITIALIZING_CHAR_VALUE;
         boolean correct = false;
         printStream.println("Введите букву (? - подсказка): ");
         do {
             input = scanner.nextLine();
-            if ("?".equals(input)) {
-                return '?';
+            if (PLAYER_NEED_HINT_STRING.equals(input)) {
+                return PLAYER_NEED_HINT_STRING.charAt(0);
             }
             if (input.length() != 1) {
                 printStream.println("Введите одну букву");
@@ -89,12 +99,12 @@ public class InputHandler {
             }
 
             letter = Character.toUpperCase(input.charAt(0));
-            if (letter != 'Ё' && letter < 'А' || letter > 'Я') {
+            if (letter != PROBLEMATIC_RUSSIAN_LETTER && letter < FIRST_RUSSIAN_LETTER || letter > LAST_RUSSIAN_LETTER) {
                 printStream.println("Введите букву русского алфавита");
                 continue;
             }
-            if (letter == 'Ё') {
-                letter = 'Е';
+            if (letter == PROBLEMATIC_RUSSIAN_LETTER) {
+                letter = PROBLEMATIC_RUSSIAN_LETTER_SOLUTION;
             }
             if (enteredLetters.contains(letter)) {
                 printStream.println("Эта буква уже была введена. Введите другую");
@@ -107,15 +117,17 @@ public class InputHandler {
     }
 
     public boolean inputContinue() {
-        printStream.println("Продолжить игру? (y/n): ");
+        printStream.println("Продолжить игру? ("
+                + PLAYER_AGREEMENT + "/"
+                + PLAYER_DISAGREEMENT + "): ");
         while (true) {
             String input = scanner.nextLine();
-            if ("y".equalsIgnoreCase(input)) {
+            if (PLAYER_AGREEMENT.equalsIgnoreCase(input)) {
                 return true;
-            } else if ("n".equalsIgnoreCase(input)) {
+            } else if (PLAYER_DISAGREEMENT.equalsIgnoreCase(input)) {
                 return false;
             } else {
-                printStream.println("Введите корректное значение");
+                printStream.println(INPUT_CORRECT_VALUE_REQUEST);
             }
         }
     }
